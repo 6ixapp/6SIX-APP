@@ -1,0 +1,15 @@
+Project Structure
+================
+
+Source Directory (src/)
+----------------------
+├── service/                 # Service layer
+├── store/                   # State management
+├── hooks/                   # Custom React hooks
+├── assets/                  # Static assets (images, fonts, etc.)
+├── app/                     # Main application code
+├── storage/                 # Local storage utilities
+├── db/                      # Database related code
+├── context/                 # React context providers
+├── components/              # Reusable React components
+└── constants/               # Application constants
