@@ -1,14 +1,14 @@
-import CustomButton from '@/src/components/common/CustomButton';
-import RotatingLogo from '@/src/components/common/RotatingLogo';
-import { AuthType } from '@/src/constants/types/auth.types';
-import { useAuth } from '@/src/context/AuthContext';
-import { verifyOTP } from '@/src/service/auth.service';
-import { logger } from '@/src/service/logger.service';
-import { createUser } from '@/src/service/user.service';
-import { useUserStore } from '@/src/store/userStore';
-import { useNavigation } from '@react-navigation/native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useRef, useState } from 'react';
+import CustomButton from "@/src/components/common/CustomButton";
+import RotatingLogo from "@/src/components/common/RotatingLogo";
+import { AuthType } from "@/src/constants/types/auth.types";
+import { useAuth } from "@/src/context/AuthContext";
+import { requestOTP, verifyOTP } from "@/src/service/auth.service";
+import { logger } from "@/src/service/logger.service";
+import { createUser } from "@/src/service/user.service";
+import { useUserStore } from "@/src/store/userStore";
+import { useNavigation } from "@react-navigation/native";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import React, { useRef, useState } from "react";
 import {
   Alert,
   Animated,
@@ -19,21 +19,24 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View
-} from 'react-native';
-import CountryPicker, { Country, CountryCode } from 'react-native-country-picker-modal';
+  View,
+} from "react-native";
+import CountryPicker, {
+  Country,
+  CountryCode,
+} from "react-native-country-picker-modal";
 
 const PhoneAuthScreen = () => {
   const router = useRouter();
-  const { authType } = useLocalSearchParams<{ authType: AuthType }>()
+  const { authType } = useLocalSearchParams<{ authType: AuthType }>();
   const { login } = useAuth();
   const { setUser } = useUserStore();
-  const [phone, setPhone] = useState('');
-  const [code, setCode] = useState('');
+  const [phone, setPhone] = useState("");
+  const [code, setCode] = useState("");
   const [isCodeSent, setIsCodeSent] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [countryCode, setCountryCode] = useState<CountryCode>('US');
-  const [callingCode, setCallingCode] = useState('1');
+  const [countryCode, setCountryCode] = useState<CountryCode>("US");
+  const [callingCode, setCallingCode] = useState("1");
   const [showCountryPicker, setShowCountryPicker] = useState(false);
 
   const slideAnim = useRef(new Animated.Value(0)).current;
@@ -47,12 +50,12 @@ const PhoneAuthScreen = () => {
   };
 
   const handlePhoneChange = (value: string) => {
-    const cleaned = value.replace(/[^0-9]/g, '');
+    const cleaned = value.replace(/[^0-9]/g, "");
     setPhone(cleaned);
   };
 
   const handleCodeChange = (value: string) => {
-    const cleaned = value.replace(/[^0-9]/g, '');
+    const cleaned = value.replace(/[^0-9]/g, "");
     if (cleaned.length <= 6) {
       setCode(cleaned);
     }
@@ -62,30 +65,77 @@ const PhoneAuthScreen = () => {
     setLoading(true);
     Keyboard.dismiss();
 
+    const formattedPhone = `+${callingCode}${phone}`;
+
     const sendiMessage = (message: string) => {
-      if (Platform.OS === 'ios') {
-        const recipient = 'sixmessage@a.imsg.co';
+      if (Platform.OS === "ios") {
+        const recipient = "sixmessage@a.imsg.co";
         const body = encodeURIComponent(message);
         const url = `imessage://${recipient}&body=${body}`;
         Linking.openURL(url);
-      } 
+      }
     };
 
-    setIsCodeSent(true);
-    sendiMessage(`Send this message to get otp from Six`)
-    // Start animations
-    Animated.parallel([
-      Animated.timing(slideAnim, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-    ]).start();
+    try {
+      const response = await requestOTP(formattedPhone);
+
+      if (response.success) {
+        setIsCodeSent(true);
+
+        Animated.parallel([
+          Animated.timing(slideAnim, {
+            toValue: 1,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+          Animated.timing(fadeAnim, {
+            toValue: 1,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+        ]).start();
+      } else {
+        // no active conversations
+        if (response.needsConversationInit) {
+          Alert.alert(
+            "First Time Setup",
+            "To send you an OTP, we need to start a conversation with you first. We'll open iMessage to help you get started.",
+            [
+              {
+                text: "Cancel",
+                style: "cancel",
+              },
+              {
+                text: "Continue",
+                onPress: () => {
+                  setIsCodeSent(true);
+                  sendiMessage(`Send this message to get otp from Six`);
+
+                  Animated.parallel([
+                    Animated.timing(slideAnim, {
+                      toValue: 1,
+                      duration: 300,
+                      useNativeDriver: true,
+                    }),
+                    Animated.timing(fadeAnim, {
+                      toValue: 1,
+                      duration: 300,
+                      useNativeDriver: true,
+                    }),
+                  ]).start();
+                },
+              },
+            ]
+          );
+        } else {
+          // Other errors
+          Alert.alert("Error", response.error || "Failed to send OTP");
+        }
+      }
+    } catch (error) {
+      logger.error("handleSendCode", "Error sending OTP:", error as string);
+      Alert.alert("Error", "Failed to send OTP. Please try again.");
+    }
 
     setLoading(false);
   };
@@ -99,27 +149,32 @@ const PhoneAuthScreen = () => {
     if (response.success) {
       const userData = {
         id: response.data.id,
-        phone: response.data.phone
+        phone: response.data.phone,
       };
       setUser({ id: userData.id, phone: userData.phone });
 
-      if (authType === AuthType.SignUp && response.isNewUser)  {
+      if (authType === AuthType.SignUp && response.isNewUser) {
         const user = await createUser(userData);
         if (user.success) {
-          router.replace('/(protected)/(onboarding)/enterName');
+          router.replace("/(protected)/(onboarding)/enterName");
         }
       } else {
         navigation.reset({
           index: 0,
-          routes: [{ name: '(protected)' as never   }],
+          routes: [{ name: "(protected)" as never }],
         });
         login(userData);
       }
     } else {
-      logger.error('handleLogin', 'Failed to verify OTP:', response.error);
-      Alert.alert('Failed to verify OTP', response.error, [{ text: 'OK', onPress: () => {
-        router.back();
-      } }]);
+      logger.error("handleLogin", "Failed to verify OTP:", response.error);
+      Alert.alert("Failed to verify OTP", response.error, [
+        {
+          text: "OK",
+          onPress: () => {
+            router.back();
+          },
+        },
+      ]);
     }
     setLoading(false);
   };
@@ -130,12 +185,13 @@ const PhoneAuthScreen = () => {
         <RotatingLogo />
       </View>
 
-      <Text style={styles.heading}>{authType === AuthType.SignUp ? 'Let\'s Begin' : 'Welcome Back'}</Text>
+      <Text style={styles.heading}>
+        {authType === AuthType.SignUp ? "Let's Begin" : "Welcome Back"}
+      </Text>
       <Text style={styles.subheading}>
         {isCodeSent
           ? "Enter the code we sent you"
-          : "We'll text you a code to confirm your number"
-        }
+          : "We'll text you a code to confirm your number"}
       </Text>
 
       {!isCodeSent ? (
@@ -152,7 +208,7 @@ const PhoneAuthScreen = () => {
               style={styles.phoneInput}
               placeholder="Enter your phone number"
               keyboardType="phone-pad"
-              placeholderTextColor={'#000'}
+              placeholderTextColor={"#000"}
               value={phone}
               onChangeText={handlePhoneChange}
               maxLength={10}
@@ -181,12 +237,14 @@ const PhoneAuthScreen = () => {
           style={[
             styles.codeContainer,
             {
-              transform: [{
-                translateY: slideAnim.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [50, 0],
-                })
-              }],
+              transform: [
+                {
+                  translateY: slideAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [50, 0],
+                  }),
+                },
+              ],
               opacity: fadeAnim,
             },
           ]}
@@ -196,7 +254,7 @@ const PhoneAuthScreen = () => {
             placeholder="Enter 6-digit code"
             keyboardType="numeric"
             value={code}
-            placeholderTextColor={'#000'}
+            placeholderTextColor={"#000"}
             onChangeText={handleCodeChange}
             maxLength={6}
           />
@@ -216,34 +274,34 @@ const styles = StyleSheet.create({
   container: {
     paddingTop: 100,
     paddingHorizontal: 20,
-    alignItems: 'center',
-    backgroundColor: '#fff',
+    alignItems: "center",
+    backgroundColor: "#fff",
     flex: 1,
   },
   logoContainer: {
-    paddingVertical: 50
+    paddingVertical: 50,
   },
   heading: {
     fontSize: 24,
-    fontWeight: '600',
+    fontWeight: "600",
     marginBottom: 10,
   },
   subheading: {
     fontSize: 16,
-    textAlign: 'center',
+    textAlign: "center",
     marginBottom: 30,
     paddingHorizontal: 10,
   },
   phoneInputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 20,
-    width: '100%',
+    width: "100%",
   },
   countryPicker: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f5f5f5",
     paddingHorizontal: 12,
     paddingVertical: 12,
     borderRadius: 8,
@@ -251,32 +309,32 @@ const styles = StyleSheet.create({
   },
   countryCode: {
     fontSize: 16,
-    color: '#000',
+    color: "#000",
   },
   invisiblePicker: {
-    position: 'absolute',
+    position: "absolute",
     width: 0,
     height: 0,
     opacity: 0,
   },
   phoneInput: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: "#f5f5f5",
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
   },
   input: {
-    width: '100%',
-    backgroundColor: '#f5f5f5',
+    width: "100%",
+    backgroundColor: "#f5f5f5",
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
     marginBottom: 20,
   },
   codeContainer: {
-    width: '100%',
-    alignItems: 'center',
+    width: "100%",
+    alignItems: "center",
   },
 });
 
