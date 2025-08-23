@@ -1,5 +1,5 @@
-import { Post } from '@/src/constants/types/post.types.';
-import { create } from 'zustand';
+import { Post } from "@/src/constants/types/post.types";
+import { create } from "zustand";
 
 interface PostStore {
   posts: Post[];
@@ -13,9 +13,13 @@ interface PostStore {
 export const usePostStore = create<PostStore>((set) => ({
   posts: [],
   setPosts: (posts: Post[]) => set({ posts }),
-  addPosts: (newPosts: Post[]) => set((state) => ({ posts: [...state.posts, ...newPosts] })),
-  addPostOnTop: ((newPost: Post) =>
-    set((state) => ({ posts: [newPost, ...state.posts] }))),
+  addPosts: (newPosts: Post[]) =>
+    set((state) => ({ posts: [...state.posts, ...newPosts] })),
+  addPostOnTop: (newPost: Post) =>
+    set((state) => ({ posts: [newPost, ...state.posts] })),
   clearPosts: () => set({ posts: [] }),
-  removeUserPost: (userId: string) => set((state) => ({ posts: state.posts.filter(post => post.user_id !== userId) })),
+  removeUserPost: (userId: string) =>
+    set((state) => ({
+      posts: state.posts.filter((post) => post.user_id !== userId),
+    })),
 }));

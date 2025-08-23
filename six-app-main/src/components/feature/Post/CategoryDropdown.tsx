@@ -1,22 +1,22 @@
-import { CategoryTabs } from '@/src/constants/types/categoryTabs';
-import { CategorySelectorProps } from '@/src/constants/types/post.types.';
-import React, { useEffect, useRef, useState } from 'react';
+import { CategoryTabs } from "@/src/constants/types/categoryTabs";
+import { CategorySelectorProps } from "@/src/constants/types/post.types";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Animated,
   StyleSheet,
   Text,
   TouchableOpacity,
   TouchableWithoutFeedback,
-  View
-} from 'react-native';
+  View,
+} from "react-native";
 
-const CategoryDropdown: React.FC<CategorySelectorProps> = ({ 
-  activeTab, 
-  onTabPress 
+const CategoryDropdown: React.FC<CategorySelectorProps> = ({
+  activeTab,
+  onTabPress,
 }) => {
   const [isDropdownVisible, setIsDropdownVisible] = useState(false);
   const dropdownScaleAnim = useRef(new Animated.Value(0)).current;
-  
+
   const toggleDropdown = () => {
     if (isDropdownVisible) {
       hideDropdown();
@@ -57,9 +57,9 @@ const CategoryDropdown: React.FC<CategorySelectorProps> = ({
   }, []);
 
   return (
-    <View style={{ position: 'relative', alignSelf: 'flex-start' }}>
+    <View style={{ position: "relative", alignSelf: "flex-start" }}>
       <TouchableOpacity
-        style={[styles.categoryButton, { backgroundColor: '#9191ff' }]}
+        style={[styles.categoryButton, { backgroundColor: "#9191ff" }]}
         onPress={toggleDropdown}
       >
         <Text style={styles.categoryText}>{activeTab}</Text>
@@ -72,17 +72,17 @@ const CategoryDropdown: React.FC<CategorySelectorProps> = ({
       )}
 
       {isDropdownVisible && (
-        <Animated.View 
+        <Animated.View
           style={[
             styles.dropdown,
             {
               transform: [
                 { scale: dropdownScaleAnim },
-                { translateY: Animated.multiply(-10, dropdownScaleAnim) }
+                { translateY: Animated.multiply(-10, dropdownScaleAnim) },
               ],
               opacity: dropdownScaleAnim,
               minWidth: 180,
-            }
+            },
           ]}
         >
           <View style={styles.dropdownContent}>
@@ -91,7 +91,7 @@ const CategoryDropdown: React.FC<CategorySelectorProps> = ({
                 key={category}
                 style={[
                   styles.categoryOption,
-                  activeTab === category && styles.activeCategoryOption
+                  activeTab === category && styles.activeCategoryOption,
                 ]}
                 onPress={() => handleSelectCategory(category)}
               >
@@ -120,13 +120,13 @@ const styles = StyleSheet.create({
   },
   categoryText: {
     fontSize: 16,
-    fontWeight: '500',
-    color: '#fff',
+    fontWeight: "500",
+    color: "#fff",
   },
   dropdown: {
-    position: 'absolute',
+    position: "absolute",
     zIndex: 10,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: {
       width: 0,
       height: 6,
@@ -135,21 +135,21 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 12,
     borderWidth: 1,
-    borderColor: '#000',
+    borderColor: "#000",
     borderRadius: 12,
-    backgroundColor: 'white',
-    top: '100%',
+    backgroundColor: "white",
+    top: "100%",
     left: 0,
     marginTop: 20,
   },
   dropdownContent: {
-    backgroundColor: 'white',
+    backgroundColor: "white",
     borderRadius: 12,
     padding: 8,
   },
   categoryOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 20,
@@ -157,14 +157,14 @@ const styles = StyleSheet.create({
   },
   activeCategoryOption: {
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: "#ddd",
   },
   bulletPoint: {
     marginRight: 8,
   },
   categoryOptionText: {
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: "500",
   },
 });
 
