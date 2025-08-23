@@ -1,31 +1,27 @@
-import React from 'react';
+import React from "react";
 import {
-    ActivityIndicator,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    TouchableOpacityProps
-} from 'react-native';
+  ActivityIndicator,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  TouchableOpacityProps,
+} from "react-native";
 
 interface CustomButtonProps extends TouchableOpacityProps {
   title: string;
   loading?: boolean;
 }
 
-const CustomButton: React.FC<CustomButtonProps> = ({ 
-  title, 
+const CustomButton: React.FC<CustomButtonProps> = ({
+  title,
   loading = false,
   disabled,
   style,
-  ...props 
+  ...props
 }) => {
   return (
     <TouchableOpacity
-      style={[
-        styles.button,
-        disabled && styles.buttonDisabled,
-        style
-      ]}
+      style={[styles.button, disabled && styles.buttonDisabled, style]}
       disabled={disabled || loading}
       {...props}
     >
@@ -40,19 +36,20 @@ const CustomButton: React.FC<CustomButtonProps> = ({
 
 const styles = StyleSheet.create({
   button: {
-    width: '100%',
-    backgroundColor: '#9191ff',
+    width: "100%",
+    backgroundColor: "#9191ff",
     padding: 15,
     borderRadius: 30,
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 20,
   },
   buttonDisabled: {
-    backgroundColor: '#d1d1ff',
+    backgroundColor: "#d1d1ff",
   },
   buttonText: {
-    color: '#fff',
-    fontWeight: '500',
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "500",
   },
 });
 
